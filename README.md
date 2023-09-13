@@ -1,6 +1,6 @@
 # asdf-nodejs
 
-simpler unofficial asdf nodejs
+simpler unofficial asdf nodejs plugin
 
 ```sh
 # install plugin
