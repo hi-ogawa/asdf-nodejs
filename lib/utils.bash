@@ -73,7 +73,7 @@ install_version() {
 		"$install_path/bin/node" --help &>/dev/null || fail "failed to execute $TOOL_NAME"
 
 		echo "Successfully installed to"
-		echo "  $install_path/bin/node"
+		echo "  $install_path"
 	) || (
 		rm -rf "$install_path"
 		fail "An error occurred while installing $TOOL_NAME $version."
@@ -83,10 +83,6 @@ install_version() {
 #
 # os/arch detection is based on https://github.com/pnpm/get.pnpm.io/blob/68ddd8aaa283a74bd10191085fff7235aa9043b5/install.sh#L45C1-L91
 #
-
-is_glibc_compatible() {
-	getconf GNU_LIBC_VERSION >/dev/null 2>&1 || ldd --version >/dev/null 2>&1 || return 1
-}
 
 detect_platform() {
 	local platform
