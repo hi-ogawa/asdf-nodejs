@@ -14,5 +14,8 @@ asdf install nodejs latest
 
 ## references
 
+- https://github.com/nodejs/node
+- https://nodejs.org/en/download
+- https://nodejs.org/dist/
 - https://github.com/asdf-vm/asdf-plugin-template
 - https://github.com/asdf-vm/asdf-nodejs/

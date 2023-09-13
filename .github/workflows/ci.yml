@@ -15,12 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: asdf-vm/actions/install@v2.2.0
-      - run: asdf plugin add pnpm .
-      - run: asdf list-all pnpm
-      - run: asdf install pnpm latest
-      - run: asdf global pnpm latest
-      - run: type pnpm
-      - run: pnpm --help
+      - run: asdf plugin add nodejs .
+      - run: asdf list-all nodejs
+      - run: asdf install nodejs latest
+      - run: asdf global nodejs latest
+      - run: type node
+      - run: node --help
 
   lint:
     runs-on: ubuntu-latest

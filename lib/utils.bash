@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-GH_REPO="https://github.com/pnpm/pnpm"
-TOOL_NAME="pnpm"
+GH_REPO="https://github.com/nodejs/node"
+TOOL_NAME="nodejs"
 
 fail() {
 	echo -e "asdf-$TOOL_NAME: $*"
@@ -34,24 +34,32 @@ list_all_versions() {
 }
 
 download_release() {
-	local version filename url
-	version="$1"
-	filename="$2"
+	local version="$1"
+	local download_path="$2"
+	local release_file="$download_path/release.tar.gz"
+	local release_dir="$download_path/release"
+	mkdir -p "$release_dir"
 
-	platform="$(detect_platform)"
+	platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
 	arch="$(detect_arch)" || fail "unsupported architecture"
-	url="$GH_REPO/releases/download/v${version}/pnpm-${platform}-${arch}"
 
-	echo "* Downloading $TOOL_NAME release $version..."
-	echo "* - url = $url"
-	echo "* - filename = $filename"
-	curl "${curl_opts[@]}" -o "$filename" "$url" || fail "Could not download $url"
+	# e.g. https://nodejs.org/dist/v18.17.1/node-v18.17.1-linux-x64.tar.gz
+	url="https://nodejs.org/dist/v${version}/node-v${version}-${platform}-${arch}.tar.gz"
+
+	echo "Downloading $TOOL_NAME release $version..."
+	echo "  from url: $url"
+	echo "  to path: $release_file"
+	curl "${curl_opts[@]}" -o "$release_file" "$url" || fail "Could not download $url"
+
+	tar -xzf "$release_file" -C "$release_dir" --strip-components=1 || fail "Could not extract $release_file"
 }
 
 install_version() {
 	local install_type="$1"
 	local version="$2"
-	local install_path="${3%/bin}/bin"
+	local install_path="$3"
+	local download_path="$4"
+	local release_dir="$download_path/release"
 
 	if [ "$install_type" != "version" ]; then
 		fail "asdf-$TOOL_NAME supports release installs only"
@@ -59,12 +67,13 @@ install_version() {
 
 	(
 		mkdir -p "$install_path"
-		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
+		cp -r "$release_dir"/* "$install_path"
 
-		chmod +x "$install_path/$TOOL_NAME"
-		"$install_path/$TOOL_NAME" --help &>/dev/null || fail "failed to execute $TOOL_NAME"
+		chmod +x "$install_path/bin/node"
+		"$install_path/bin/node" --help &>/dev/null || fail "failed to execute $TOOL_NAME"
 
-		echo "$TOOL_NAME $version installation was successful!"
+		echo "Successfully installed to"
+		echo "  $install_path/bin/node"
 	) || (
 		rm -rf "$install_path"
 		fail "An error occurred while installing $TOOL_NAME $version."
@@ -72,7 +81,7 @@ install_version() {
 }
 
 #
-# os/arch detection is copied from https://github.com/pnpm/get.pnpm.io/blob/68ddd8aaa283a74bd10191085fff7235aa9043b5/install.sh#L45C1-L91
+# os/arch detection is based on https://github.com/pnpm/get.pnpm.io/blob/68ddd8aaa283a74bd10191085fff7235aa9043b5/install.sh#L45C1-L91
 #
 
 is_glibc_compatible() {
@@ -84,14 +93,6 @@ detect_platform() {
 	platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
 	case "${platform}" in
-	linux)
-		if is_glibc_compatible; then
-			platform="linux"
-		else
-			platform="linuxstatic"
-		fi
-		;;
-	darwin) platform="macos" ;;
 	windows) platform="win" ;;
 	esac
 
@@ -104,21 +105,8 @@ detect_arch() {
 
 	case "${arch}" in
 	x86_64 | amd64) arch="x64" ;;
-	armv*) arch="arm" ;;
 	arm64 | aarch64) arch="arm64" ;;
 	esac
 
-	# `uname -m` in some cases mis-reports 32-bit OS as 64-bit, so double check
-	if [ "${arch}" = "x64" ] && [ "$(getconf LONG_BIT)" -eq 32 ]; then
-		arch=i686
-	elif [ "${arch}" = "arm64" ] && [ "$(getconf LONG_BIT)" -eq 32 ]; then
-		arch=arm
-	fi
-
-	case "$arch" in
-	x64*) ;;
-	arm64*) ;;
-	*) return 1 ;;
-	esac
 	printf '%s' "${arch}"
 }
